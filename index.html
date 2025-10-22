@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KNSC107 - BG Wating Student Assembly Morning</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background-color: black;
+      font-family: Century Gothic;
+    }
+    #screen {
+      width: 100%; height: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background-image 0.5s ease-in-out;
+    }
+    #server-time {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      font-size: 38px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
+      user-select: none;
+    }
+    #countdown-box {
+      position: absolute;
+      right: 20px;
+      top: 100px;
+      font-size: 28px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
+      display: none;
+      user-select: none;
+    }
+    #copyright {
+    position: absolute;
+    bottom: 15px;
+    left: 18px;
+    font-size: 34px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: Century Gothic;
+    user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="screen"></div>
+  <div id="countdown-box"></div>
+  <div id="server-time">Loading...</div>
+  <div id="copyright">© 2025 System Developed by KNSC107</div>
+
+<script>
+  const images = [
+    '1Green.png',  // Green
+    '2Yellow.png', // Yellow
+    '3Red.png'     // Red
+  ];
+
+  // Varible countdown
+  let countdownStarted = false;
+  let countdownInterval = null;
+
+  // Func calling server time
+  async function fetchServerTime() {
+    try {
+      const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Bangkok');
+      const data = await response.json();
+      return new Date(data.datetime);
+    } catch (error) {
+      console.error('Error fetching time from server. Fallback to local time.', error);
+      return new Date();
+    }
+  }
+
+  // Func countdown
+  function startCountdown(seconds) {
+    const box = document.getElementById('countdown-box');
+    box.style.display = 'block';
+    updateCountdownBox(seconds);
+
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    countdownInterval = setInterval(() => {
+      seconds--;
+      if (seconds <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        box.style.display = 'none';
+        countdownStarted = false;
+      } else {
+        updateCountdownBox(seconds);
+      }
+    }, 1000);
+  }
+
+  // Func update time box
+  function updateCountdownBox(sec) {
+    const box = document.getElementById('countdown-box');
+    const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+    const ss = String(sec % 60).padStart(2, '0');
+    box.textContent = `Countdown : ${mm}:${ss}`;
+  }
+
+  // Main func update pic and time
+  async function updateImageAndTime() {
+    const screen = document.getElementById('screen');
+    const serverTimeDiv = document.getElementById('server-time');
+    const now = await fetchServerTime();
+
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    serverTimeDiv.textContent = `Server Time : ${hh}:${mm}:${ss}`;
+
+    const timeNow = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    /*
+      Assign Time
+      Ex:
+      - Green: 07:00:00 - 07:59:00
+      - Yellow: 08:00:00 - 08:59:00
+      - Red: 09:00:00 - 09:59:00
+    */
+
+    const greenEnd = 7 * 3600 + 48 * 60 ;    
+    const yellowStart = greenEnd + 1;      
+    const yellowEnd = yellowStart + 60;  
+    const redStart = yellowEnd + 1;          
+    const redEnd = 12 * 3600 ;      
+
+    // countdown 1 min before change green to yellow
+    if (timeNow >= greenEnd - 60 && timeNow < greenEnd && !countdownStarted) {
+      startCountdown(greenEnd - timeNow);
+      countdownStarted = true;
+    }
+    // countdown 1 min before change yellow to red
+    else if (timeNow >= yellowEnd - 60 && timeNow < yellowEnd && !countdownStarted) {
+      startCountdown(yellowEnd - timeNow);
+      countdownStarted = true;
+    }
+
+    // Change picture according selected time
+    if (timeNow >= greenEnd && timeNow <= yellowEnd) {
+      screen.style.backgroundImage = `url('${images[1]}')`; // Y
+    } else if (timeNow >= redStart && timeNow <= redEnd) {
+      screen.style.backgroundImage = `url('${images[2]}')`; // R
+    } else {
+      screen.style.backgroundImage = `url('${images[0]}')`; // G
+      // If not countdown hidden box
+      if (!countdownInterval) {
+        const box = document.getElementById('countdown-box');
+        box.style.display = 'none';
+        countdownStarted = false;
+      }
+    }
+  }
+
+  // Calling and Loop every sec
+  updateImageAndTime();
+  setInterval(updateImageAndTime, 1000);
+</script>
+
+</body>
+</html>
